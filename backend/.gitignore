@@ -12,5 +12,3 @@ yolov8n.pt
 # Upload Folder
 uploads
 
-# model
-../yolov8n.pt
