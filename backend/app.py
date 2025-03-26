@@ -1,4 +1,3 @@
-# backend/app.py
 import os
 import json
 import asyncio
@@ -6,18 +5,23 @@ import cv2
 from fastapi import FastAPI, UploadFile, File, WebSocket, WebSocketDisconnect, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from backend.detection_model import process_frame, classify_detections
-from backend.config import UPLOAD_DIR
+from backend.config import UPLOAD_DIR  # We will update this to use os.getenv
+
+# Get environment variables
+UPLOAD_DIR = os.getenv("UPLOAD_DIR", "./uploads")  # Get upload path from environment variables
+PORT = int(os.getenv("PORT", 8000))  # Get the port from environment variables (default 8000)
 
 app = FastAPI(title="Scalable CCTV Video Detection", version="1.0.0")
 
 # CORS middleware configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # allows all
+    allow_origins=["*"],  # allows all origins
     allow_credentials=True,
-    allow_methods=["*"], 
+    allow_methods=["*"],
     allow_headers=["*"],
 )
+
 # create upload directory if it doesn't exist
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
@@ -45,7 +49,7 @@ async def websocket_annotated(websocket: WebSocket, video: str = Query(...)):
     await websocket.accept()
     
     # construct path to uploaded video
-    video_path =os.path.join(UPLOAD_DIR, video)
+    video_path = os.path.join(UPLOAD_DIR, video)
     
     # check if video exists or not
     if not os.path.exists(video_path):
@@ -63,7 +67,7 @@ async def websocket_annotated(websocket: WebSocket, video: str = Query(...)):
     try:
         while True:
             # read video frames asynchronously
-            ret, frame= await asyncio.to_thread(cap.read)
+            ret, frame = await asyncio.to_thread(cap.read)
             
             # if the frame is not valid, it means the video has ended
             if not ret:
@@ -71,7 +75,7 @@ async def websocket_annotated(websocket: WebSocket, video: str = Query(...)):
                 break
             
             # process frame to get detections
-            detections= process_frame(frame)
+            detections = process_frame(frame)
             
             # classify detections (includes suspicious and accident detections)
             labeled_detections = classify_detections(detections)
@@ -107,5 +111,5 @@ async def websocket_annotated(websocket: WebSocket, video: str = Query(...)):
 
 if __name__ == "__main__":
     import uvicorn
-    # Run  app with Uvicorn on host 0.0.0.0, port 8000, and with auto-reload
-    uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True)
+    # Run app with Uvicorn on host 0.0.0.0, port 8000, and with auto-reload
+    uvicorn.run("app:app", host="0.0.0.0", port=PORT, reload=False)  # No reload for production
