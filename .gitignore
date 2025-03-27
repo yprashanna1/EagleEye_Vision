@@ -1,0 +1,17 @@
+# Virtual environments
+venv/
+.venv/
+
+# Python cache and compiled files
+__pycache__/
+*.pyc
+*.pyo
+
+# Backend-specific
+backend/uploads/
+backend/*.pt
+backend/.env
+
+# System files
+.DS_Store
+Thumbs.db

@@ -1,5 +1,4 @@
-# backend/config.py
 import os
 
-# Path to store uploaded videos
-UPLOAD_DIR = os.path.join(os.getcwd(), "uploads")
+# Absolute path for uploads directory
+UPLOAD_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "uploads")
