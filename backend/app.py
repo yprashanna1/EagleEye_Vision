@@ -5,7 +5,8 @@ import cv2
 from fastapi import FastAPI, UploadFile, File, WebSocket, WebSocketDisconnect, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from backend.detection_model import process_frame, classify_detections
-from backend.config import UPLOAD_DIR  # We will update this to use os.getenv
+UPLOAD_DIR = os.getenv("UPLOAD_DIR", "../uploads")
+
 
 # Get environment variables
 UPLOAD_DIR = os.getenv("UPLOAD_DIR", "./uploads")  # Get upload path from environment variables
