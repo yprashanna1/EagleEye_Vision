@@ -97,8 +97,13 @@ async def websocket_annotated(websocket: WebSocket, video: str = Query(...)):
                 await websocket.send_text(json.dumps({"error": "Failed to encode frame"}))
                 continue
 
-            # send frame over WebSocket connection
-            await websocket.send_bytes(encoded_image.tobytes())
+            # Check if WebSocket is still open before sending data
+            if websocket.client_state == WebSocketState.CONNECTED:
+                # send frame over WebSocket connection
+                await websocket.send_bytes(encoded_image.tobytes())
+            else:
+                # If WebSocket is closed, stop sending data
+                break
             
             # sleep to achieve ~30 FPS
             await asyncio.sleep(0.033)
@@ -107,7 +112,10 @@ async def websocket_annotated(websocket: WebSocket, video: str = Query(...)):
     finally:
         # Release video capture when done
         cap.release()
-        await websocket.close()
+        # Only close the WebSocket if it's still open
+        if websocket.client_state == WebSocketState.CONNECTED:
+            await websocket.close()
+
 
 if __name__ == "__main__":
     import uvicorn
