@@ -7,7 +7,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from backend.detection_model import process_frame, classify_detections
 from starlette.websockets import WebSocketState
 
-
 # Get environment variables
 UPLOAD_DIR = os.getenv("UPLOAD_DIR", "./uploads")  # Get upload path from environment variables
 PORT = int(os.getenv("PORT", 8000))  # Get the port from environment variables (default 8000)
@@ -65,34 +64,40 @@ async def websocket_annotated(websocket: WebSocket, video: str = Query(...)):
         await websocket.close()
         return
 
+    # Optimize video decoding settings by setting the appropriate codec
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # You can change to other codecs if needed
+    cap.set(cv2.CAP_PROP_FOURCC, fourcc)  # Set the codec
+
+    # Check total number of frames to validate video integrity
+    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    print(f"Total frames: {total_frames}")
+
     try:
         while True:
             # read video frames asynchronously
             ret, frame = await asyncio.to_thread(cap.read)
-            
-            # if the frame is not valid, it means the video has ended
+
+            # If ret is False, it signifies the end of the video or a corrupted frame
             if not ret:
-                await websocket.send_text(json.dumps({"status": "Video ended"}))
+                await websocket.send_text(json.dumps({"error": "Failed to read frame or end of video reached."}))
                 break
             
-            # process frame to get detections
+            # Process the frame (e.g., object detection)
             detections = process_frame(frame)
-            
-            # classify detections (includes suspicious and accident detections)
             labeled_detections = classify_detections(detections)
             
-            # annotate frame with bounding boxes and labels
+            # Annotate frame with bounding boxes and labels
             annotated_frame = frame.copy()
             for det, color, label_text in labeled_detections:
                 bbox = det["bounding_box"]
                 x1, y1, x2, y2 = bbox["x1"], bbox["y1"], bbox["x2"], bbox["y2"]
                 
-                # draw bounding box and label on frame
+                # Draw bounding box and label on frame
                 cv2.rectangle(annotated_frame, (x1, y1), (x2, y2), color, 2)
                 cv2.putText(annotated_frame, label_text, (x1, max(0, y1 - 10)),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
 
-            # encode annotated frame as JPEG
+            # Encode annotated frame as JPEG
             success, encoded_image = cv2.imencode(".jpg", annotated_frame)
             if not success:
                 await websocket.send_text(json.dumps({"error": "Failed to encode frame"}))
