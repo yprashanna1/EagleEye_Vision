@@ -2,6 +2,7 @@ from dotenv import load_dotenv
 load_dotenv()  # Load environment variables from .env
 
 from fastapi import FastAPI, UploadFile, File
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 import cv2
 import numpy as np
@@ -14,6 +15,15 @@ from email import encoders
 from collections import deque
 
 app = FastAPI()
+
+# Add CORS middleware (for production, replace "*" with your actual frontend URL)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Load YOLOv8 model at startup (assumes best.pt is in the ./model directory)
 MODEL_PATH = os.path.join(os.path.dirname(__file__), "model", "best.pt")
