@@ -6,31 +6,10 @@ import numpy as np
 
 # Configure page
 st.set_page_config(page_title="EagleEye Vision Dashboard", layout="wide")
-
-# Custom CSS for luxury theme (optional)
-st.markdown("""
-<style>
-body {
-    background-color: #1E1E1E;  /* dark background */
-    color: #F0EAD6;            /* ivory text for contrast */
-}
-header, .stButton>button, .stFileUploader {
-    background-color: #262730;
-    border: none;
-}
-.stButton>button {
-    color: white;
-    background-color: #A77D2D !important;  /* gold button */
-    border-radius: 5px;
-}
-</style>
-""", unsafe_allow_html=True)
-
-# Title and description
 st.title("🚨 EagleEye Vision")
 st.markdown(
     "Upload a video feed and watch **EagleEye Vision** detect accidents in real time. "
-    "Frames with detected accidents will be highlighted and an alert will be sent automatically."
+    "Annotated frames will be displayed below."
 )
 
 # File uploader widget
@@ -49,6 +28,7 @@ if uploaded_file is not None:
     frame_placeholder = st.empty()
     
     try:
+        # Send the video file to the backend with streaming enabled
         with requests.post(backend_url, files={"file": open(temp_video_path, "rb")}, stream=True) as response:
             if response.status_code != 200:
                 st.error(f"Backend returned an error: {response.status_code}")
@@ -61,21 +41,27 @@ if uploaded_file is not None:
                         # Process as long as we have a complete frame
                         while b'--frame' in bytes_buffer:
                             parts = bytes_buffer.split(b'--frame')
-                            # The last part may be incomplete; keep it for next iteration
-                            if len(parts) > 1:
-                                frame_part = parts[1]
-                                bytes_buffer = b'--frame'.join(parts[2:])
-                                # Check if we have the complete header and JPEG data
-                                header_end = frame_part.find(b'\r\n\r\n')
-                                if header_end != -1:
-                                    jpg_bytes = frame_part[header_end+4:]
-                                    # Decode the JPEG image
-                                    frame_array = np.frombuffer(jpg_bytes, np.uint8)
-                                    frame = cv2.imdecode(frame_array, cv2.IMREAD_COLOR)
-                                    if frame is not None:
-                                        # Convert BGR to RGB for proper color display
-                                        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                                        frame_placeholder.image(frame, channels="RGB")
+                            # Process all complete parts (all parts except the last, which may be incomplete)
+                            for part in parts[:-1]:
+                                part = part.strip()
+                                if not part:
+                                    continue
+                                # Find the header terminator (the blank line after headers)
+                                header_end = part.find(b'\r\n\r\n')
+                                if header_end == -1:
+                                    continue
+                                jpg_bytes = part[header_end+4:]
+                                if not jpg_bytes:
+                                    continue
+                                # Decode the JPEG image
+                                frame_array = np.frombuffer(jpg_bytes, np.uint8)
+                                frame = cv2.imdecode(frame_array, cv2.IMREAD_COLOR)
+                                if frame is not None:
+                                    # Convert from BGR to RGB for display in Streamlit
+                                    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                                    frame_placeholder.image(frame, channels="RGB")
+                            # Retain the last incomplete part for the next iteration
+                            bytes_buffer = parts[-1]
         st.success("Processing complete.")
     except Exception as e:
         st.error(f"Error during streaming: {e}")

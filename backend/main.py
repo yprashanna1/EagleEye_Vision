@@ -73,7 +73,8 @@ def process_video(file: UploadFile = File(...)):
                         x1, y1, x2, y2 = map(int, box.xyxy[0])
                         cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 2)  # Red box
                         label = f"Accident {conf*100:.1f}%"
-                        cv2.putText(frame, label, (x1, y1-10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+                        cv2.putText(frame, label, (x1, y1-10),
+                                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
                     if not accident_detected:
                         accident_detected = True
                         # Save the previous 5 seconds of frames (pre-event)
@@ -88,7 +89,8 @@ def process_video(file: UploadFile = File(...)):
                             post_event_frames_to_capture -= 1
                 else:
                     # No detection: annotate as Non-Accident
-                    cv2.putText(frame, "Non-Accident", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 255, 0), 2)
+                    cv2.putText(frame, "Non-Accident", (10, 30),
+                                cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 255, 0), 2)
                     if accident_detected and post_event_frames_to_capture > 0:
                         clip_frames.append(frame.copy())
                         post_event_frames_to_capture -= 1

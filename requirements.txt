@@ -6,3 +6,5 @@ ultralytics
 numpy
 requests
 python-dotenv
+python-multipart
+websockets
