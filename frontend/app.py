@@ -3,6 +3,7 @@ import requests
 from io import BytesIO
 import cv2
 import numpy as np
+import os
 
 # Configure page
 st.set_page_config(page_title="EagleEye_Vision Dashboard", layout="wide")
@@ -47,8 +48,7 @@ if uploaded_file is not None:
     accident_detected_flag = False
 
     # Open a connection to the backend streaming endpoint
-    backend_url = "http://<YOUR_BACKEND_URL_OR_IP>:8000/process_video"  # e.g., localhost or Render service URL
-    # Stream the video frames from backend
+    backend_url = os.environ.get("BACKEND_URL", "http://localhost:8000/process_video")    # Stream the video frames from backend
     with requests.post(backend_url, files={"file": open(temp_video_path, "rb")}, stream=True) as response:
         if response.status_code != 200:
             st.error(f"Backend returned an error: {response.status_code}")
