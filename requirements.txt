@@ -1,0 +1,8 @@
+fastapi
+uvicorn[standard]
+streamlit
+opencv-python-headless
+ultralytics
+numpy
+requests
+python-dotenv
